@@ -2,7 +2,7 @@ package firebase
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"slide-share/model"
 
 	"cloud.google.com/go/firestore"
@@ -10,7 +10,6 @@ import (
 )
 
 type IUserRepository interface {
-	GetUsers() ([]model.User, error)
 	GetUserByEmail(email string) (*model.User, error)
 	CreateUser(user model.User) (*model.User, error)
 	UpdateUser(user model.User) (*model.User, error)
@@ -24,22 +23,6 @@ func NewUserRepository(client *firestore.Client) IUserRepository {
 	return &UserRepository{client: client}
 }
 
-func (ur *UserRepository) GetUsers() ([]model.User, error) {
-	users, err := ur.client.Collection("users").Documents(context.Background()).GetAll()
-	if err != nil {
-		log.Fatalf("error getting user collection: %v", err)
-	}
-
-	var userCollection []model.User
-	for _, user := range users {
-		var u model.User
-		user.DataTo(&u)
-		userCollection = append(userCollection, u)
-	}
-
-	return userCollection, nil
-}
-
 func (ur *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 	ctx := context.Background()
 	iter := ur.client.Collection("users").Where("Email", "==", email).Documents(ctx)
@@ -51,7 +34,7 @@ func (ur *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 			return nil, nil
 		}
 		// その他のエラーの場合、ログを出力してエラーを返す
-		log.Printf("error getting user by email: %v", err)
+		fmt.Printf("error getting user by email: %v", err)
 		return nil, err
 	}
 
@@ -62,7 +45,7 @@ func (ur *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 
 	var user model.User
 	if err := docSnapshot.DataTo(&user); err != nil {
-		log.Printf("error converting user data: %v", err)
+		fmt.Printf("error converting user data: %v", err)
 		return nil, err
 	}
 
@@ -72,7 +55,7 @@ func (ur *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 func (ur *UserRepository) CreateUser(user model.User) (*model.User, error) {
 	_, err := ur.client.Collection("users").Doc(user.ID).Set(context.Background(), user)
 	if err != nil {
-		log.Fatalf("error creating user: %v", err)
+		fmt.Printf("error creating user: %v", err)
 		return nil, err
 	}
 
@@ -82,7 +65,7 @@ func (ur *UserRepository) CreateUser(user model.User) (*model.User, error) {
 func (ur *UserRepository) UpdateUser(user model.User) (*model.User, error) {
 	_, err := ur.client.Collection("users").Doc(user.ID).Set(context.Background(), user)
 	if err != nil {
-		log.Fatalf("error updating user: %v", err)
+		fmt.Printf("error updating user: %v", err)
 		return nil, err
 	}
 
