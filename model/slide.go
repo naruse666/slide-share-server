@@ -11,10 +11,12 @@ type SlideGroup struct {
 
 type Slide struct {
 	ID                  string `json:"id"`
+	IsPublish           bool   `json:"is_publish"`
 	Title               string `json:"title"`
 	DrivePDFURL         string `json:"drive_pdf_url"`
 	StorageThumbnailURL string `json:"storage_thumbnail_url"`
 	GoogleSlideShareURL string `json:"google_slide_share_url"`
+	GroupID             string `json:"group_id"`
 	SpeakerID           string `json:"speaker_id"`
 }
 
@@ -28,10 +30,12 @@ type SlideGroupResponse struct {
 
 type SlideResponse struct {
 	ID                  string `json:"id"`
+	IsPublish           bool   `json:"is_publish"`
 	Title               string `json:"title"`
 	DrivePDFURL         string `json:"drive_pdf_url"`
 	StorageThumbnailURL string `json:"storage_thumbnail_url"`
 	GoogleSlideShareURL string `json:"google_slide_share_url"`
+	GroupID             string `json:"group_id"`
 	SpeakerID           string `json:"speaker_id"`
 	SpeakerName         string `json:"speaker_name"`
 	SpeakerImage        string `json:"speaker_image"`

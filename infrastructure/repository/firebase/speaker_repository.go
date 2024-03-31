@@ -9,7 +9,7 @@ import (
 )
 
 type ISpeakerRepository interface {
-	GetSpeakerByID(speakerID string) (*model.SpeakerResponse, error)
+	GetSpeakerByID(speakerID string) (*model.SpeakerWithSlideResponse, error)
 	GetSpeakerList() ([]model.SpeakerResponse, error)
 }
 
@@ -21,7 +21,7 @@ func NewSpeakerRepository(client *firestore.Client) ISpeakerRepository {
 	return &SpeakerRepository{client: client}
 }
 
-func (sr *SpeakerRepository) GetSpeakerByID(speakerID string) (*model.SpeakerResponse, error) {
+func (sr *SpeakerRepository) GetSpeakerByID(speakerID string) (*model.SpeakerWithSlideResponse, error) {
 	speakerDoc, err := sr.client.Collection("users").Where("SpeakerID", "==", speakerID).Documents(context.Background()).Next()
 	if err != nil {
 		fmt.Printf("error getting speaker document: %v", err)
@@ -30,7 +30,30 @@ func (sr *SpeakerRepository) GetSpeakerByID(speakerID string) (*model.SpeakerRes
 	var speaker model.SpeakerResponse
 	speakerDoc.DataTo(&speaker)
 
-	return &speaker, nil
+	slides, err := sr.client.CollectionGroup("slides").Where("SpeakerID", "==", speakerID).Documents(context.Background()).GetAll()
+	if err != nil {
+		fmt.Printf("error getting slide collection: %v", err)
+	}
+
+	println("slide", slides)
+	var slideCollection []model.Slide
+	for _, slide := range slides {
+		println("slide: ", slide.Data())
+		var s model.Slide
+		slide.DataTo(&s)
+		slideCollection = append(slideCollection, s)
+	}
+
+	speakerWithSlide := model.SpeakerWithSlideResponse{
+		SpeakerID:   speaker.SpeakerID,
+		DisplayName: speaker.DisplayName,
+		Image:       speaker.Image,
+		School:      speaker.School,
+		Course:      speaker.Course,
+		SlideList:   slideCollection,
+	}
+
+	return &speakerWithSlide, nil
 }
 
 func (sr *SpeakerRepository) GetSpeakerList() ([]model.SpeakerResponse, error) {

@@ -8,9 +8,11 @@ func SlideRoutes(g *echo.Group, sc ISlideController) {
 			// page パラメーターが存在する場合に呼び出すメソッド
 			// return sc.GetSlidePage(c)
 		}
-		return sc.GetNewestSlideGroup(c)
+		return sc.GetSlideGroups(c)
 	})
+	g.GET("/newest", sc.GetNewestSlideGroup)
 	g.GET("/:slide_group_id", sc.GetSlideGroup)
+	g.POST("/:slide_group_id", sc.CreateSlideGroup)
 	g.GET("/:slide_group_id/:slide_id", sc.GetSlide)
 }
 

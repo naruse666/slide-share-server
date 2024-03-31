@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slide-share/model"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
@@ -11,6 +12,7 @@ import (
 
 type IUserRepository interface {
 	GetUserByEmail(email string) (*model.User, error)
+	GetUsers() ([]model.User, error)
 	CreateUser(user model.User) (*model.User, error)
 	UpdateUser(user model.User) (*model.User, error)
 }
@@ -52,6 +54,33 @@ func (ur *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 	return &user, nil
 }
 
+func (ur *UserRepository) GetUsers() ([]model.User, error) {
+	ctx := context.Background()
+	iter := ur.client.Collection("users").OrderBy("Role", firestore.Asc).OrderBy("CreatedAt", firestore.Asc).Documents(ctx)
+
+	var users []model.User
+	for {
+		docSnapshot, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Printf("error getting users: %v", err)
+			return nil, err
+		}
+
+		var user model.User
+		if err := docSnapshot.DataTo(&user); err != nil {
+			fmt.Printf("error converting user data: %v", err)
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
 func (ur *UserRepository) CreateUser(user model.User) (*model.User, error) {
 	_, err := ur.client.Collection("users").Doc(user.ID).Set(context.Background(), user)
 	if err != nil {
@@ -63,6 +92,8 @@ func (ur *UserRepository) CreateUser(user model.User) (*model.User, error) {
 }
 
 func (ur *UserRepository) UpdateUser(user model.User) (*model.User, error) {
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
 	_, err := ur.client.Collection("users").Doc(user.ID).Set(context.Background(), user)
 	if err != nil {
 		fmt.Printf("error updating user: %v", err)

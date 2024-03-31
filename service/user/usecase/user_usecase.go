@@ -6,6 +6,7 @@ import (
 )
 
 type IUserUsecase interface {
+	GetUsers() ([]model.User, error)
 	UpdateUser(user model.User) (*model.User, error)
 }
 
@@ -15,6 +16,15 @@ type userUsecase struct {
 
 func NewUserUsecase(ur firebase.IUserRepository) IUserUsecase {
 	return &userUsecase{ur: ur}
+}
+
+func (uu *userUsecase) GetUsers() ([]model.User, error) {
+	users, err := uu.ur.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (uu *userUsecase) UpdateUser(user model.User) (*model.User, error) {

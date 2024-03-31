@@ -12,6 +12,8 @@ import (
 type ISlideRepository interface {
 	GetNewestSlideGroup() (*model.SlideGroupResponse, error)
 	GetSlideGroup(slideGroupID string) (*model.SlideGroupResponse, error)
+	GetSlideGroups() ([]string, error)
+	CreateSlideGroup(slideGroup *model.SlideGroup) (string, error)
 	GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error)
 }
 
@@ -65,9 +67,11 @@ func (sr *SlideRepository) GetNewestSlideGroup() (*model.SlideGroupResponse, err
 		slideList = append(slideList, model.SlideResponse{
 			ID:                  slide.ID,
 			Title:               slide.Title,
+			IsPublish:           slide.IsPublish,
 			DrivePDFURL:         slide.DrivePDFURL,
 			StorageThumbnailURL: slide.StorageThumbnailURL,
 			GoogleSlideShareURL: slide.GoogleSlideShareURL,
+			GroupID:             slide.GroupID,
 			SpeakerID:           speaker.SpeakerID,
 			SpeakerName:         speaker.DisplayName,
 			SpeakerImage:        speaker.Image,
@@ -128,10 +132,12 @@ func (sr *SlideRepository) GetSlideGroup(slideGroupID string) (*model.SlideGroup
 
 		slideList = append(slideList, model.SlideResponse{
 			ID:                  slide.ID,
+			IsPublish:           slide.IsPublish,
 			Title:               slide.Title,
 			DrivePDFURL:         slide.DrivePDFURL,
 			StorageThumbnailURL: slide.StorageThumbnailURL,
 			GoogleSlideShareURL: slide.GoogleSlideShareURL,
+			GroupID:             slide.GroupID,
 			SpeakerID:           speaker.SpeakerID,
 			SpeakerName:         speaker.DisplayName,
 			SpeakerImage:        speaker.Image,
@@ -151,6 +157,38 @@ func (sr *SlideRepository) GetSlideGroup(slideGroupID string) (*model.SlideGroup
 		PresentationAt: slideGroup.PresentationAt,
 		SlideList:      slideList,
 	}, nil
+}
+
+func (sr *SlideRepository) GetSlideGroups() ([]string, error) {
+	ctx := context.Background()
+	iter := sr.client.Collection("slide_group").Documents(ctx)
+	var slideGroupIDs []string
+	for {
+		doc, err := iter.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			fmt.Printf("error getting slide group document: %v", err)
+			return nil, err
+		}
+
+		slideGroupIDs = append(slideGroupIDs, doc.Ref.ID)
+	}
+
+	return slideGroupIDs, nil
+}
+
+func (sr *SlideRepository) CreateSlideGroup(slideGroup *model.SlideGroup) (string, error) {
+	ctx := context.Background()
+	slideGroupRef := sr.client.Collection("slide_group").Doc(slideGroup.ID)
+	_, err := slideGroupRef.Set(ctx, slideGroup)
+	if err != nil {
+		fmt.Printf("error setting slide group: %v", err)
+		return "", err
+	}
+
+	return slideGroup.ID, nil
 }
 
 func (sr *SlideRepository) GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error) {
@@ -180,6 +218,7 @@ func (sr *SlideRepository) GetSlide(slideGroupID string, slideID string) (*model
 
 	return &model.SlideResponse{
 		ID:                  slide.ID,
+		IsPublish:           slide.IsPublish,
 		Title:               slide.Title,
 		DrivePDFURL:         slide.DrivePDFURL,
 		StorageThumbnailURL: slide.StorageThumbnailURL,

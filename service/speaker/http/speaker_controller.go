@@ -8,6 +8,7 @@ import (
 )
 
 type ISpeakerController interface {
+	GetSpeakerByID(c echo.Context) error
 	GetSpeakerList(c echo.Context) error
 }
 
@@ -17,6 +18,16 @@ type speakerController struct {
 
 func NewSpeakerController(sc usecase.ISpeakerUsecase) ISpeakerController {
 	return &speakerController{sc: sc}
+}
+
+func (sc *speakerController) GetSpeakerByID(c echo.Context) error {
+	speakerID := c.Param("speaker_id")
+	speaker, err := sc.sc.GetSpeakerByID(speakerID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, speaker)
 }
 
 func (sc *speakerController) GetSpeakerList(c echo.Context) error {

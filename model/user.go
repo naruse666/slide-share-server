@@ -38,3 +38,12 @@ type SpeakerResponse struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+type SpeakerWithSlideResponse struct {
+	SpeakerID   string  `json:"speaker_id"`
+	DisplayName string  `json:"display_name"`
+	Image       string  `json:"image"`
+	School      string  `json:"school"`
+	Course      string  `json:"course"`
+	SlideList   []Slide `json:"slide_list"`
+}
