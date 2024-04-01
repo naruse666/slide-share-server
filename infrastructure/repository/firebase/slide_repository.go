@@ -305,8 +305,7 @@ func (sr *SlideRepository) GetSlide(slideGroupID string, slideID string) (*model
 
 func (sr *SlideRepository) CreateSlide(slideGroupID string, slide *model.Slide) (string, error) {
 	ctx := context.Background()
-	slideRef := sr.client.Collection("slide_group").Doc(slideGroupID).Collection("slides").NewDoc()
-	slide.ID = slideRef.ID
+	slideRef := sr.client.Collection("slide_group").Doc(slideGroupID).Collection("slides").Doc(slide.ID)
 	_, err := slideRef.Set(ctx, slide)
 	if err != nil {
 		fmt.Printf("error setting slide: %v", err)

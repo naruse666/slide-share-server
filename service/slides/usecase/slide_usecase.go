@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"slide-share/infrastructure/adapter"
 	"slide-share/infrastructure/repository/firebase"
 	"slide-share/infrastructure/repository/storage"
@@ -103,6 +104,7 @@ func (su *slideUsecase) UploadSlideBySlidesURL(SlideUploadBySlidesURL *model.Sli
 	// Slides URLからIDを取得
 	slidesId, err := utils.ExtractSlideIDFromURL(SlideUploadBySlidesURL.SlidesURL)
 	if err != nil {
+		fmt.Println("error extracting slide id from url: ", err)
 		return err
 	}
 	// Drive APIを使用し、IDからPDFを取得

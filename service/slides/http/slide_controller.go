@@ -144,24 +144,25 @@ func (sc *SlideController) UpdateSlide(c echo.Context) error {
 }
 
 func (sc *SlideController) UploadSlideBySlidesURL(c echo.Context) error {
-	// authToken := c.Request().Header.Get("Authorization")
-	// secret := os.Getenv("AUTH_SECRET")
-	// payload, err := utils.VerifyAndGetUserClaims(authToken, secret)
-	// if err != nil {
-	// 	return c.JSON(http.StatusUnauthorized, err.Error())
-	// }
-	// if payload.Role == "user" || payload.Role == "" {
-	// 	return c.JSON(http.StatusForbidden, "Forbidden")
-	// }
+	authToken := c.Request().Header.Get("Authorization")
+	secret := os.Getenv("AUTH_SECRET")
+	payload, err := utils.VerifyAndGetUserClaims(authToken, secret)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, err.Error())
+	}
+	if payload.Role == "user" || payload.Role == "" {
+		return c.JSON(http.StatusForbidden, "Forbidden")
+	}
 
 	slideUploadBySlidesURL := model.SlideUploadBySlidesURL{}
-	if err := c.Bind(&slideUploadBySlidesURL); err != nil {
+	if err = c.Bind(&slideUploadBySlidesURL); err != nil {
 		log.Println(err)
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	err := sc.su.UploadSlideBySlidesURL(&slideUploadBySlidesURL)
+	err = sc.su.UploadSlideBySlidesURL(&slideUploadBySlidesURL)
 	if err != nil {
+		log.Println(err)
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
