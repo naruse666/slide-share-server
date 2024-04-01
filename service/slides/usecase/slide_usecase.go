@@ -8,10 +8,12 @@ import (
 
 type ISlideUsecase interface {
 	GetNewestSlideGroup() (*model.SlideGroupResponse, error)
+	GetSlideGroupByPage(page int) ([]*model.SlideGroupResponse, error)
 	GetSlideGroup(slideGroupID string) (*model.SlideGroupResponse, error)
 	GetSlideGroups() ([]string, error)
 	CreateSlideGroup(slideGroup *model.SlideGroup) (string, error)
 	GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error)
+	UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error
 }
 
 type slideUsecase struct {
@@ -30,6 +32,15 @@ func (su *slideUsecase) GetNewestSlideGroup() (*model.SlideGroupResponse, error)
 	}
 
 	return slideGroup, nil
+}
+
+func (su *slideUsecase) GetSlideGroupByPage(page int) ([]*model.SlideGroupResponse, error) {
+	slideGroups, err := su.sr.GetSlideGroupByPage(page)
+	if err != nil {
+		return nil, err
+	}
+
+	return slideGroups, nil
 }
 
 func (su *slideUsecase) GetSlideGroup(slideGroupID string) (*model.SlideGroupResponse, error) {
@@ -72,4 +83,13 @@ func (su *slideUsecase) GetSlide(slideGroupID string, slideID string) (*model.Sl
 	}
 
 	return slide, nil
+}
+
+func (su *slideUsecase) UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error {
+	err := su.sr.UpdateSlide(slideGroupID, slideID, slide)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -11,10 +11,12 @@ import (
 
 type ISlideRepository interface {
 	GetNewestSlideGroup() (*model.SlideGroupResponse, error)
+	GetSlideGroupByPage(page int) ([]*model.SlideGroupResponse, error)
 	GetSlideGroup(slideGroupID string) (*model.SlideGroupResponse, error)
 	GetSlideGroups() ([]string, error)
 	CreateSlideGroup(slideGroup *model.SlideGroup) (string, error)
 	GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error)
+	UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error
 }
 
 type SlideRepository struct {
@@ -91,6 +93,77 @@ func (sr *SlideRepository) GetNewestSlideGroup() (*model.SlideGroupResponse, err
 		PresentationAt: slideGroup.PresentationAt,
 		SlideList:      slideList,
 	}, nil
+}
+
+func (sr *SlideRepository) GetSlideGroupByPage(page int) ([]*model.SlideGroupResponse, error) {
+	ctx := context.Background()
+	slideGroups := sr.client.Collection("slide_group").OrderBy("PresentationAt", firestore.Desc).Offset((page - 1) * 5).Limit(5).Documents(ctx)
+
+	var slideGroupList []*model.SlideGroupResponse
+	for {
+		slideGroupDoc, err := slideGroups.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			fmt.Printf("error getting slide group document: %v", err)
+			return nil, err
+		}
+
+		slides := slideGroupDoc.Ref.Collection("slides").Documents(ctx)
+		var slideList []model.SlideResponse
+		for {
+			slideSnapshot, err := slides.Next()
+			if err != nil {
+				if err == iterator.Done {
+					break
+				}
+				fmt.Printf("error getting slide: %v", err)
+				return nil, err
+			}
+
+			var slide model.Slide
+			if err := slideSnapshot.DataTo(&slide); err != nil {
+				fmt.Printf("error converting slide data: %v", err)
+				return nil, err
+			}
+
+			speaker, err := NewSpeakerRepository(sr.client).GetSpeakerByID(slide.SpeakerID)
+			if err != nil {
+				fmt.Printf("error getting speaker by ID: %v", err)
+				return nil, err
+			}
+
+			slideList = append(slideList, model.SlideResponse{
+				ID:                  slide.ID,
+				IsPublish:           slide.IsPublish,
+				Title:               slide.Title,
+				DrivePDFURL:         slide.DrivePDFURL,
+				StorageThumbnailURL: slide.StorageThumbnailURL,
+				GoogleSlideShareURL: slide.GoogleSlideShareURL,
+				GroupID:             slide.GroupID,
+				SpeakerID:           speaker.SpeakerID,
+				SpeakerName:         speaker.DisplayName,
+				SpeakerImage:        speaker.Image,
+			})
+		}
+
+		var slideGroup model.SlideGroup
+		if err := slideGroupDoc.DataTo(&slideGroup); err != nil {
+			fmt.Printf("error converting slide group data: %v", err)
+			return nil, err
+		}
+
+		slideGroupList = append(slideGroupList, &model.SlideGroupResponse{
+			ID:             slideGroup.ID,
+			Title:          slideGroup.Title,
+			DriveID:        slideGroup.DriveID,
+			PresentationAt: slideGroup.PresentationAt,
+			SlideList:      slideList,
+		})
+	}
+
+	return slideGroupList, nil
 }
 
 func (sr *SlideRepository) GetSlideGroup(slideGroupID string) (*model.SlideGroupResponse, error) {
@@ -227,4 +300,16 @@ func (sr *SlideRepository) GetSlide(slideGroupID string, slideID string) (*model
 		SpeakerName:         speaker.DisplayName,
 		SpeakerImage:        speaker.Image,
 	}, nil
+}
+
+func (sr *SlideRepository) UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error {
+	ctx := context.Background()
+	slideRef := sr.client.Collection("slide_group").Doc(slideGroupID).Collection("slides").Doc(slideID)
+	_, err := slideRef.Set(ctx, slide)
+	if err != nil {
+		fmt.Printf("error setting slide: %v", err)
+		return err
+	}
+
+	return nil
 }

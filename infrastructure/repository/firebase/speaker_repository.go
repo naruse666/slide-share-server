@@ -35,10 +35,8 @@ func (sr *SpeakerRepository) GetSpeakerByID(speakerID string) (*model.SpeakerWit
 		fmt.Printf("error getting slide collection: %v", err)
 	}
 
-	println("slide", slides)
 	var slideCollection []model.Slide
 	for _, slide := range slides {
-		println("slide: ", slide.Data())
 		var s model.Slide
 		slide.DataTo(&s)
 		slideCollection = append(slideCollection, s)

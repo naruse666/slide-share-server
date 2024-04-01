@@ -7,16 +7,19 @@ import (
 	"slide-share/model"
 	"slide-share/service/slides/usecase"
 	"slide-share/utils"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
 
 type ISlideController interface {
 	GetNewestSlideGroup(c echo.Context) error
+	GetSlideGroupByPage(c echo.Context) error
 	GetSlideGroup(c echo.Context) error
 	GetSlideGroups(c echo.Context) error
 	CreateSlideGroup(c echo.Context) error
 	GetSlide(c echo.Context) error
+	UpdateSlide(c echo.Context) error
 }
 
 type SlideController struct {
@@ -34,6 +37,25 @@ func (sc *SlideController) GetNewestSlideGroup(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, slideGroup)
+}
+
+func (sc *SlideController) GetSlideGroupByPage(c echo.Context) error {
+	page := c.QueryParam("page")
+	if page == "" {
+		return c.JSON(http.StatusBadRequest, "page query parameter is required")
+	}
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "invalid page query parameter")
+	}
+
+	slideGroups, err := sc.su.GetSlideGroupByPage(pageInt)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, slideGroups)
 }
 
 func (sc *SlideController) GetSlideGroup(c echo.Context) error {
@@ -91,4 +113,31 @@ func (sc *SlideController) GetSlide(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, slide)
+}
+
+func (sc *SlideController) UpdateSlide(c echo.Context) error {
+	authToken := c.Request().Header.Get("Authorization")
+	secret := os.Getenv("AUTH_SECRET")
+	payload, err := utils.VerifyAndGetUserClaims(authToken, secret)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, err.Error())
+	}
+	if payload.Role == "user" || payload.Role == "" {
+		return c.JSON(http.StatusForbidden, "Forbidden")
+	}
+
+	slide := model.Slide{}
+	if err := c.Bind(&slide); err != nil {
+		log.Println(err)
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	slideGroupID := c.Param("slide_group_id")
+	slideID := c.Param("slide_id")
+
+	err = sc.su.UpdateSlide(slideGroupID, slideID, &slide)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusNoContent, nil)
 }
