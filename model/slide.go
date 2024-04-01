@@ -40,3 +40,13 @@ type SlideResponse struct {
 	SpeakerName         string `json:"speaker_name"`
 	SpeakerImage        string `json:"speaker_image"`
 }
+
+type SlideUploadBySlidesURL struct {
+	ID        string `json:"id"`
+	SlidesURL string `json:"slides_url"`
+	Title     string `json:"title"`
+	IsPublish bool   `json:"is_publish"`
+	DriveID   string `json:"drive_id"`
+	GroupID   string `json:"group_id"`
+	SpeakerID string `json:"speaker_id"`
+}

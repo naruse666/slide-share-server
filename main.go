@@ -5,6 +5,7 @@ import (
 	"os"
 	"slide-share/infrastructure/adapter"
 	"slide-share/infrastructure/repository/firebase"
+	rstorage "slide-share/infrastructure/repository/storage"
 	"slide-share/lib"
 	auth_http "slide-share/service/auth/http"
 	auth_usecase "slide-share/service/auth/usecase"
@@ -20,20 +21,23 @@ import (
 )
 
 func main() {
-	firestore, _ := lib.InitFirebase()
+	firestore, storage := lib.InitFirebase()
 	driveService, _ := lib.InitDrive()
+	slidesService, _ := lib.InitSlides()
 	defer firestore.Close()
 
 	userRepository := firebase.NewUserRepository(firestore)
 	speakerRepository := firebase.NewSpeakerRepository(firestore)
 	slideRepository := firebase.NewSlideRepository(firestore)
+	thumbnailRepository := rstorage.NewThumbnailRepository(storage)
 
 	driveAdapter := adapter.NewDriveAdapter(driveService)
+	slidesAdapter := adapter.NewSlidesAdapter(slidesService)
 
 	authUsecase := auth_usecase.NewAuthUsecase(userRepository)
 	userUsecase := user_usecase.NewUserUsecase(userRepository)
 	speakerUsecase := speaker_usecase.NewSpeakerUsecase(speakerRepository)
-	slideUsecase := slide_usecase.NewSlideUsecase(slideRepository, driveAdapter)
+	slideUsecase := slide_usecase.NewSlideUsecase(slideRepository, driveAdapter, slidesAdapter, thumbnailRepository)
 
 	authController := auth_http.NewAuthController(authUsecase)
 	userController := user_http.NewUserController(userUsecase)

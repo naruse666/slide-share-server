@@ -3,7 +3,9 @@ package usecase
 import (
 	"slide-share/infrastructure/adapter"
 	"slide-share/infrastructure/repository/firebase"
+	"slide-share/infrastructure/repository/storage"
 	"slide-share/model"
+	"slide-share/utils"
 )
 
 type ISlideUsecase interface {
@@ -14,15 +16,18 @@ type ISlideUsecase interface {
 	CreateSlideGroup(slideGroup *model.SlideGroup) (string, error)
 	GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error)
 	UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error
+	UploadSlideBySlidesURL(SlideUploadBySlidesURL *model.SlideUploadBySlidesURL) error
 }
 
 type slideUsecase struct {
 	sr firebase.ISlideRepository
+	tr storage.IThumbnailRepository
+	sa adapter.ISlidesAdapter
 	da adapter.IDriveAdapter
 }
 
-func NewSlideUsecase(sr firebase.ISlideRepository, da adapter.IDriveAdapter) ISlideUsecase {
-	return &slideUsecase{sr: sr, da: da}
+func NewSlideUsecase(sr firebase.ISlideRepository, da adapter.IDriveAdapter, sa adapter.ISlidesAdapter, tr storage.IThumbnailRepository) ISlideUsecase {
+	return &slideUsecase{sr: sr, da: da, sa: sa, tr: tr}
 }
 
 func (su *slideUsecase) GetNewestSlideGroup() (*model.SlideGroupResponse, error) {
@@ -87,6 +92,56 @@ func (su *slideUsecase) GetSlide(slideGroupID string, slideID string) (*model.Sl
 
 func (su *slideUsecase) UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error {
 	err := su.sr.UpdateSlide(slideGroupID, slideID, slide)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (su *slideUsecase) UploadSlideBySlidesURL(SlideUploadBySlidesURL *model.SlideUploadBySlidesURL) error {
+	// Slides URLからIDを取得
+	slidesId, err := utils.ExtractSlideIDFromURL(SlideUploadBySlidesURL.SlidesURL)
+	if err != nil {
+		return err
+	}
+	// Drive APIを使用し、IDからPDFを取得
+	pdfData, err := su.da.DownloadSlideAsPDF(slidesId)
+	if err != nil {
+		return err
+	}
+
+	// Slides APIを使用し、IDからサムネイル画像を取得
+	thumbnailData, err := su.sa.FetchSlideThumbnail(slidesId)
+	if err != nil {
+		return err
+	}
+
+	// Drive APIを使用し、PDFをDriveにアップロード
+	pdfURL, err := su.da.UploadPDFToDrive(pdfData, SlideUploadBySlidesURL.DriveID, SlideUploadBySlidesURL.Title)
+	if err != nil {
+		return err
+	}
+
+	// Firebase Cloud Storageを使用し、サムネイル画像をアップロード
+	thumbnailURL, err := su.tr.UploadThumbnail(thumbnailData, SlideUploadBySlidesURL.ID, SlideUploadBySlidesURL.GroupID)
+	if err != nil {
+		return err
+	}
+
+	// PDFのURL, サムネイル画像のURL, スライド情報を Firestoreに保存
+	slide := &model.Slide{
+		ID:                  SlideUploadBySlidesURL.ID,
+		IsPublish:           SlideUploadBySlidesURL.IsPublish,
+		Title:               SlideUploadBySlidesURL.Title,
+		DrivePDFURL:         pdfURL,
+		StorageThumbnailURL: thumbnailURL,
+		GoogleSlideShareURL: "",
+		GroupID:             SlideUploadBySlidesURL.GroupID,
+		SpeakerID:           SlideUploadBySlidesURL.SpeakerID,
+	}
+
+	_, err = su.sr.CreateSlide(SlideUploadBySlidesURL.GroupID, slide)
 	if err != nil {
 		return err
 	}

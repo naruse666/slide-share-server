@@ -16,6 +16,7 @@ type ISlideRepository interface {
 	GetSlideGroups() ([]string, error)
 	CreateSlideGroup(slideGroup *model.SlideGroup) (string, error)
 	GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error)
+	CreateSlide(slideGroupID string, slide *model.Slide) (string, error)
 	UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error
 }
 
@@ -300,6 +301,19 @@ func (sr *SlideRepository) GetSlide(slideGroupID string, slideID string) (*model
 		SpeakerName:         speaker.DisplayName,
 		SpeakerImage:        speaker.Image,
 	}, nil
+}
+
+func (sr *SlideRepository) CreateSlide(slideGroupID string, slide *model.Slide) (string, error) {
+	ctx := context.Background()
+	slideRef := sr.client.Collection("slide_group").Doc(slideGroupID).Collection("slides").NewDoc()
+	slide.ID = slideRef.ID
+	_, err := slideRef.Set(ctx, slide)
+	if err != nil {
+		fmt.Printf("error setting slide: %v", err)
+		return "", err
+	}
+
+	return slide.ID, nil
 }
 
 func (sr *SlideRepository) UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error {
