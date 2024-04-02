@@ -1,0 +1,48 @@
+# Git ディレクトリとファイル
+.git
+.gitignore
+
+# 一時ファイルやディレクトリ
+tmp
+temp
+
+# ログファイル
+*.log
+
+# Node.js の依存関係ディレクトリ
+node_modules
+
+# Goモジュールキャッシュ
+/go
+
+# ビルド時に作成されるバイナリやオブジェクトファイル
+*.o
+*.a
+*.so
+bin/
+vendor/
+
+# IDE 設定
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# テストファイル
+*_test.go
+
+# 認証情報ファイル
+*.key
+*.pem
+*.cert
+
+# 環境設定ファイル
+.env
+*.env
+
+# その他不要なファイル
+.DS_Store
+Thumbs.db
+
+# Firebase のサービスアカウントキーファイル
+serviceAccountKey.json

@@ -58,5 +58,10 @@ func main() {
 	speaker_http.NewSpeakerRouter(e, speakerController)
 	slide_http.NewSlideRouter(e, slideController)
 
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", 8080)))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Cloud Run が自動的に設定する PORT 環境変数のデフォルト値
+	}
+
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
 }
