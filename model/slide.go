@@ -42,11 +42,21 @@ type SlideResponse struct {
 }
 
 type SlideUploadBySlidesURL struct {
-	ID        string `json:"id"`
-	SlidesURL string `json:"slides_url"`
-	Title     string `json:"title"`
-	IsPublish bool   `json:"is_publish"`
-	DriveID   string `json:"drive_id"`
-	GroupID   string `json:"group_id"`
-	SpeakerID string `json:"speaker_id"`
+	ID             string `json:"id"`
+	SlidesURL      string `json:"slides_url"`
+	Title          string `json:"title"`
+	IsPublish      bool   `json:"is_publish"`
+	SlidesShareURL string `json:"slides_share_url"`
+	DriveID        string `json:"drive_id"`
+	GroupID        string `json:"group_id"`
+	SpeakerID      string `json:"speaker_id"`
+}
+type SlideUploadByPDF struct {
+	ID             string `json:"id"`
+	Title          string `json:"title"`
+	IsPublish      bool   `json:"is_publish"`
+	SlidesShareURL string `json:"slides_share_url"`
+	DriveID        string `json:"drive_id"`
+	GroupID        string `json:"group_id"`
+	SpeakerID      string `json:"speaker_id"`
 }

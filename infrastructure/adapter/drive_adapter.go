@@ -12,7 +12,7 @@ import (
 type IDriveAdapter interface {
 	CreateFolder(folderName string) (string, error)
 	DownloadSlideAsPDF(slideID string) ([]byte, error)
-	UploadPDFToDrive(pdfData []byte, folderID string, fileName string) (string, error)
+	UploadPDFToDrive(pdfData []byte, folderID string, fileName string) (string, string, error)
 }
 
 type DriveAdapter struct {
@@ -21,6 +21,15 @@ type DriveAdapter struct {
 
 func NewDriveAdapter(service *drive.Service) IDriveAdapter {
 	return &DriveAdapter{service: service}
+}
+
+func (da *DriveAdapter) GetFile(fileID string) (*drive.File, error) {
+	file, err := da.service.Files.Get(fileID).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }
 
 func (da *DriveAdapter) CreateFolder(folderName string) (string, error) {
@@ -53,7 +62,7 @@ func (da *DriveAdapter) DownloadSlideAsPDF(slideID string) ([]byte, error) {
 	return pdfData, nil
 }
 
-func (da *DriveAdapter) UploadPDFToDrive(pdfData []byte, folderID string, fileName string) (string, error) {
+func (da *DriveAdapter) UploadPDFToDrive(pdfData []byte, folderID string, fileName string) (string, string, error) {
 	pdfMetadata := &drive.File{
 		Name:    fileName,
 		Parents: []string{folderID},
@@ -61,7 +70,7 @@ func (da *DriveAdapter) UploadPDFToDrive(pdfData []byte, folderID string, fileNa
 
 	file, err := da.service.Files.Create(pdfMetadata).Media(bytes.NewReader(pdfData)).Do()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	permission := &drive.Permission{
@@ -70,10 +79,10 @@ func (da *DriveAdapter) UploadPDFToDrive(pdfData []byte, folderID string, fileNa
 	}
 	_, err = da.service.Permissions.Create(file.Id, permission).Do()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	publicURL := fmt.Sprintf("https://drive.google.com/file/d/%s/preview", file.Id)
 
-	return publicURL, nil
+	return file.Id, publicURL, nil
 }

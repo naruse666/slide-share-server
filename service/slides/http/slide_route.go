@@ -9,10 +9,15 @@ func SlideRoutes(g *echo.Group, sc ISlideController) {
 		}
 		return sc.GetSlideGroups(c)
 	})
-	g.POST("", sc.UploadSlideBySlidesURL)
+
+	g.POST("/upload/slides", sc.UploadSlideBySlidesURL)
+	g.POST("/upload/pdf", sc.UploadSlideByPDF)
+
 	g.GET("/newest", sc.GetNewestSlideGroup)
+
 	g.GET("/:slide_group_id", sc.GetSlideGroup)
 	g.POST("/:slide_group_id", sc.CreateSlideGroup)
+
 	g.GET("/:slide_group_id/:slide_id", sc.GetSlide)
 	g.PUT("/:slide_group_id/:slide_id", sc.UpdateSlide)
 }
