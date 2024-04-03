@@ -19,6 +19,7 @@ type ISlideController interface {
 	GetSlideGroup(c echo.Context) error
 	GetSlideGroups(c echo.Context) error
 	CreateSlideGroup(c echo.Context) error
+	UpdateSlideGroup(c echo.Context) error
 	GetSlide(c echo.Context) error
 	UpdateSlide(c echo.Context) error
 	UploadSlideBySlidesURL(c echo.Context) error
@@ -104,6 +105,31 @@ func (sc *SlideController) CreateSlideGroup(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, DriveID)
+}
+
+func (sc *SlideController) UpdateSlideGroup(c echo.Context) error {
+	authToken := c.Request().Header.Get("Authorization")
+	secret := os.Getenv("AUTH_SECRET")
+	payload, err := utils.VerifyAndGetUserClaims(authToken, secret)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, err.Error())
+	}
+	if payload.Role == "user" || payload.Role == "" {
+		return c.JSON(http.StatusForbidden, "Forbidden")
+	}
+
+	slideGroup := model.SlideGroup{}
+	if err := c.Bind(&slideGroup); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	slideGroupID := c.Param("slide_group_id")
+
+	err = sc.su.UpdateSlideGroup(slideGroupID, &slideGroup)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusNoContent, nil)
 }
 
 func (sc *SlideController) GetSlide(c echo.Context) error {

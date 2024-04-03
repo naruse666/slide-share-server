@@ -14,6 +14,7 @@ type ISlideUsecase interface {
 	GetSlideGroup(slideGroupID string) (*model.SlideGroupResponse, error)
 	GetSlideGroups() ([]string, error)
 	CreateSlideGroup(slideGroup *model.SlideGroup) (string, error)
+	UpdateSlideGroup(slideGroupID string, slideGroup *model.SlideGroup) error
 	GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error)
 	UpdateSlide(slideGroupID string, slideID string, slide *model.Slide) error
 	UploadSlideBySlidesURL(SlideUploadBySlidesURL *model.SlideUploadBySlidesURL) error
@@ -80,6 +81,15 @@ func (su *slideUsecase) CreateSlideGroup(slideGroup *model.SlideGroup) (string, 
 	}
 
 	return DriveID, nil
+}
+
+func (su *slideUsecase) UpdateSlideGroup(slideGroupID string, slideGroup *model.SlideGroup) error {
+	err := su.sr.UpdateSlideGroup(slideGroupID, slideGroup)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (su *slideUsecase) GetSlide(slideGroupID string, slideID string) (*model.SlideResponse, error) {
