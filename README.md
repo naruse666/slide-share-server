@@ -1,4 +1,4 @@
-# LT Slide Share Web
+# LT Slide Share Server
 
 ## Usage
 ```bash
