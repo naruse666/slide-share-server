@@ -11,6 +11,7 @@ import (
 )
 
 type IUserRepository interface {
+	GetUser(id string) (*model.User, error)
 	GetUserByEmail(email string) (*model.User, error)
 	GetUsers() ([]model.User, error)
 	CreateUser(user model.User) (*model.User, error)
@@ -23,6 +24,28 @@ type UserRepository struct {
 
 func NewUserRepository(client *firestore.Client) IUserRepository {
 	return &UserRepository{client: client}
+}
+
+func (ur *UserRepository) GetUser(id string) (*model.User, error) {
+	ctx := context.Background()
+	docSnapshot, err := ur.client.Collection("users").Doc(id).Get(ctx)
+	if err != nil {
+		fmt.Printf("error getting user by id: %v", err)
+		return nil, err
+	}
+
+	// ドキュメントが存在するかチェック
+	if !docSnapshot.Exists() {
+		return nil, nil
+	}
+
+	var user model.User
+	if err := docSnapshot.DataTo(&user); err != nil {
+		fmt.Printf("error converting user data: %v", err)
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func (ur *UserRepository) GetUserByEmail(email string) (*model.User, error) {
@@ -92,7 +115,6 @@ func (ur *UserRepository) CreateUser(user model.User) (*model.User, error) {
 }
 
 func (ur *UserRepository) UpdateUser(user model.User) (*model.User, error) {
-	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 	_, err := ur.client.Collection("users").Doc(user.ID).Set(context.Background(), user)
 	if err != nil {
