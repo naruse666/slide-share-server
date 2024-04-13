@@ -6,6 +6,7 @@ import (
 	"slide-share/model"
 
 	"cloud.google.com/go/firestore"
+	"google.golang.org/api/iterator"
 )
 
 type ISpeakerRepository interface {
@@ -22,9 +23,15 @@ func NewSpeakerRepository(client *firestore.Client) ISpeakerRepository {
 }
 
 func (sr *SpeakerRepository) GetSpeakerByID(speakerID string) (*model.SpeakerWithSlideResponse, error) {
-	speakerDoc, err := sr.client.Collection("users").Where("SpeakerID", "==", speakerID).Documents(context.Background()).Next()
+	iter := sr.client.Collection("users").Where("SpeakerID", "==", speakerID).Documents(context.Background())
+	speakerDoc, err := iter.Next()
+	if err == iterator.Done {
+		fmt.Println("No more items in iterator - No document found")
+		return nil, fmt.Errorf("no speaker document found for ID: %s", speakerID)
+	}
 	if err != nil {
-		fmt.Printf("error getting speaker document: %v", err)
+		fmt.Printf("error getting speaker document: %v\n", err)
+		return nil, err
 	}
 
 	var speaker model.SpeakerResponse
@@ -33,12 +40,16 @@ func (sr *SpeakerRepository) GetSpeakerByID(speakerID string) (*model.SpeakerWit
 	slides, err := sr.client.CollectionGroup("slides").Where("SpeakerID", "==", speakerID).Documents(context.Background()).GetAll()
 	if err != nil {
 		fmt.Printf("error getting slide collection: %v", err)
+		return nil, err
 	}
 
 	var slideCollection []model.Slide
 	for _, slide := range slides {
 		var s model.Slide
-		slide.DataTo(&s)
+		if err := slide.DataTo(&s); err != nil {
+			fmt.Printf("error decoding slide data: %v\n", err)
+			continue
+		}
 		slideCollection = append(slideCollection, s)
 	}
 
