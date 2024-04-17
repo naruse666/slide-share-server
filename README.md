@@ -2,7 +2,7 @@
 
 ## Usage Diagram
 
-![Usage Diagram](https://github.com/R1013-T/slide-share/blob/main/assets/usage_diagram_slide_share.jpg)
+![Usage Diagram](https://github.com/R1013-T/slide-share/blob/main/assets/usage_diagram_slide_share_server.jpg)
 
 ## Usage
 
