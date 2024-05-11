@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+    - opened
+    - synchronize
+  paths-ignore: 
+  - README.md
+  - Dockerfile
+
+permissions:
+  contents: read
+
+jobs:
+  # Lint
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get go version
+        id: go-version
+        run: |
+          version=$(cat .go-version)
+          echo "go-version=$version" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.go-version.outputs.go-version }}
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  # Test 
+  # Build & Push
